@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "minecraft-biome-colors",
+  "main": "src/index.js",
+  "compatibility_date": "2026-07-09",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+
+  // per-version colormap JSON; create: wrangler kv namespace create COLORMAPS
+  "kv_namespaces": [
+    { "binding": "COLORMAPS", "id": "REPLACE_WITH_KV_NAMESPACE_ID" }
+  ],
+
+  // colormap PNGs keyed by sha256; create: wrangler r2 bucket create colormap-textures
+  "r2_buckets": [
+    { "binding": "TEXTURES", "bucket_name": "colormap-textures" }
+  ]
+}

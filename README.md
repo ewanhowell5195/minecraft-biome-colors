@@ -1,0 +1,39 @@
+# minecraft-biome-colors
+
+Cloudflare Worker that serves version-accurate Minecraft biome color data: per-biome
+temperature, downfall, and baked grass/foliage/dry foliage/water/sky colors, plus the
+vanilla colormap textures. Clients render it however they like (OptiFine grid colormaps,
+the vanilla temperature/humidity triangle, reference charts).
+
+## API
+
+- `GET /versions` - Minecraft release versions
+- `GET /colormap/:version` - biome color JSON for a version
+- `GET /texture/:hash` - colormap PNG by content hash
+
+Results are cached permanently (KV for JSON, R2 for textures); each version is immutable
+so it is only ever computed once.
+
+## How data is produced
+
+Biome numeric ids (grid column order) are read straight from the client jar: the
+`Biomes` class registration order, parsed from bytecode in JS (src/lib/classparse.js),
+no JVM needed. Works on obfuscated jars too since biome name strings survive obfuscation.
+
+- **Backfill (1.16.2 - now):** `npm run export` writes every release to `backfill/data/`
+  (params from misode/mcmeta, ids + textures from the jar), `npm run textures` saves the
+  unique colormap PNGs, `npm run upload` loads both into KV/R2.
+- **Live (future 26.x+ releases):** the Worker extracts on cache miss (src/live.js).
+  The bytecode param extractor is not built yet; misses return 501 rather than caching
+  anything unvalidated.
+
+## Dev
+
+```
+npm install
+npm run dev      # local worker
+npm run deploy
+```
+
+Create the bindings once: `wrangler kv namespace create COLORMAPS` (paste the id into
+wrangler.jsonc) and `wrangler r2 bucket create colormap-textures`.

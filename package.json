@@ -1,0 +1,15 @@
+{
+  "name": "minecraft-biome-colors",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "export": "node scripts/backfill/export-all.js",
+    "textures": "node scripts/backfill/fetch-textures.js",
+    "upload": "node scripts/backfill/upload.js"
+  },
+  "devDependencies": {
+    "wrangler": "^4"
+  }
+}
