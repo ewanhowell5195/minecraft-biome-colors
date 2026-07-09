@@ -4,6 +4,7 @@ import { openZip } from "../../src/lib/zip.js"
 import { decodePng } from "../../src/lib/colormap.js"
 import { sha256hex } from "../../src/lib/inflate.js"
 import { findBiomeOrderInJar, buildBiomeRecord } from "../../src/lib/biome.js"
+import { validateDoc } from "../../src/lib/validate.js"
 
 const OUT = "backfill/data"
 const FLOOR = "1.16.2"
@@ -42,17 +43,6 @@ async function worldHeight(v) {
   return { min: 0, max: 256 } // pre-1.18 default
 }
 
-function validate(doc) {
-  const by = Object.fromEntries(doc.biomes.map((b) => [b.id, b]))
-  const plains = by["plains"]
-  if (!plains) throw new Error("no plains")
-  if (plains.temperature !== 0.8 || plains.downfall !== 0.4) throw new Error(`plains off: ${plains.temperature}/${plains.downfall}`)
-  if (!/^#[0-9a-f]{6}$/.test(plains.grassColor)) throw new Error("plains grassColor malformed")
-  const ids = doc.biomes.map((b) => b.numericId)
-  if (new Set(ids).size !== ids.length) throw new Error("duplicate numericId")
-  if (Math.min(...ids) !== 0 || Math.max(...ids) !== ids.length - 1) throw new Error("numericId not contiguous")
-}
-
 async function exportVersion(v) {
   const pkg = await fetchJson(v.url)
   const reg = await fetchJson(MCMETA(v.id, "summary", "registries/data.min.json"))
@@ -89,7 +79,7 @@ async function exportVersion(v) {
   const textures = { grass: await sha256hex(grassBuf), foliage: await sha256hex(foliageBuf) }
   if (dryBuf) textures.dryFoliage = await sha256hex(dryBuf)
   const doc = { worldMinY: min, worldMaxY: max, textures, biomes }
-  validate(doc)
+  validateDoc(doc)
   mkdirSync(OUT, { recursive: true })
   writeFileSync(`${OUT}/${v.id}.json`, JSON.stringify(doc, null, 2) + "\n")
   return { version: v.id, biomes: biomes.length, cls: found.cls }

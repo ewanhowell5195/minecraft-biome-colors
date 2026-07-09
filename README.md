@@ -23,9 +23,10 @@ no JVM needed. Works on obfuscated jars too since biome name strings survive obf
 - **Backfill (1.16.2 - now):** `npm run export` writes every release to `backfill/data/`
   (params from misode/mcmeta, ids + textures from the jar), `npm run textures` saves the
   unique colormap PNGs, `npm run upload` loads both into KV/R2.
-- **Live (future 26.x+ releases):** the Worker extracts on cache miss (src/live.js).
-  The bytecode param extractor is not built yet; misses return 501 rather than caching
-  anything unvalidated.
+- **Live (future 26.x+ releases):** on cache miss the Worker range-reads the client jar,
+  abstractly interprets the biome builder bytecode for params (src/lib/biomeparams.js),
+  builds the same doc as the backfill, validates against known anchors, and only then
+  caches. Snapshots and pre-1.16.2 versions are rejected.
 
 ## Dev
 

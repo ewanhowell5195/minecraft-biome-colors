@@ -52,10 +52,27 @@ export function parseClass(buf) {
 
   const utf = (i) => cp[i]?.value
   const strVal = (i) => cp[i]?.tag === TAG.STRING ? utf(cp[i].utf8Index) : undefined
+  const className = (i) => cp[i]?.tag === TAG.CLASS ? utf(cp[i].nameIndex) : undefined
   const methodName = (i) => {
     const ref = cp[i]
     if (!ref || (ref.tag !== TAG.METHODREF && ref.tag !== TAG.IFACE_METHODREF)) return undefined
     return utf(cp[ref.natIndex].nameIndex)
+  }
+  // Fieldref/Methodref -> { cls, name, desc }
+  const memberRef = (i) => {
+    const ref = cp[i]
+    if (!ref || (ref.tag !== TAG.FIELDREF && ref.tag !== TAG.METHODREF && ref.tag !== TAG.IFACE_METHODREF)) return undefined
+    const nat = cp[ref.natIndex]
+    return { cls: className(ref.classIndex), name: utf(nat.nameIndex), desc: utf(nat.descIndex) }
+  }
+  // ldc/ldc_w/ldc2_w operand -> JS number/string, undefined for other kinds
+  const constVal = (i) => {
+    const c = cp[i]
+    if (!c) return undefined
+    if (c.tag === TAG.INTEGER || c.tag === TAG.FLOAT || c.tag === TAG.DOUBLE) return c.value
+    if (c.tag === TAG.LONG) return Number(c.value)
+    if (c.tag === TAG.STRING) return utf(c.utf8Index)
+    return undefined
   }
 
   u2(); u2(); u2() // access, this, super
@@ -85,7 +102,22 @@ export function parseClass(buf) {
   const fields = readMembers()
   const methods = readMembers()
 
-  return { cp, utf, strVal, methodName, fields, methods, dv, buf }
+  return { cp, utf, strVal, className, methodName, memberRef, constVal, fields, methods, dv, buf }
+}
+
+// "(Lfoo;IZ)Lbar;" -> { args: ['L','I','Z'], ret: 'L' } (first char of each type)
+export function parseDescriptor(desc) {
+  const args = []
+  let i = 1
+  while (desc[i] !== ")") {
+    const start = i
+    while (desc[i] === "[") i++
+    if (desc[i] === "L") { while (desc[i] !== ";") i++ }
+    i++
+    args.push(desc[start] === "[" ? "[" : desc[start])
+  }
+  const r = desc[i + 1]
+  return { args, ret: r === "[" ? "[" : r, retClass: desc.slice(i + 2, -1) }
 }
 
 // Operand lengths in bytes after each opcode (wide/switches are special-cased in walkCode).

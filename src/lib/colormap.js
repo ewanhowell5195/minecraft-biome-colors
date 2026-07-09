@@ -61,22 +61,24 @@ export function applyGrassModifier(color, modifier) {
   return color
 }
 
-// Vanilla default sky color when a biome doesn't set one: hue from temperature.
-// Packs via (int) truncation, matching the game (not rounding).
-function hsvToRgb(hh, s, v) {
-  const i = Math.floor(hh * 6), f = hh * 6 - i
-  const p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s)
+// Vanilla default sky color (Biome.calculateSkyColor): hue from temperature.
+// Bit-exact float32 replication of Mth.hsvToRgb, incl. (int) truncation.
+const fr = Math.fround
+function hsvToRgb(h, s, v) {
+  const i = (fr(h * 6) | 0) % 6
+  const f = fr(fr(h * 6) - i)
+  const p = fr(v * fr(1 - s)), q = fr(v * fr(1 - fr(f * s))), t = fr(v * fr(1 - fr(fr(1 - f) * s)))
   let r, g, b
-  switch (i % 6) {
+  switch (i) {
     case 0: [r, g, b] = [v, t, p]; break; case 1: [r, g, b] = [q, v, p]; break
     case 2: [r, g, b] = [p, v, t]; break; case 3: [r, g, b] = [p, q, v]; break
     case 4: [r, g, b] = [t, p, v]; break; default: [r, g, b] = [v, p, q]
   }
-  return ((r * 255 | 0) << 16) | ((g * 255 | 0) << 8) | (b * 255 | 0)
+  return ((fr(r * 255) | 0) << 16) | ((fr(g * 255) | 0) << 8) | (fr(b * 255) | 0)
 }
 export function defaultSky(temperature) {
-  const f = Math.max(-1, Math.min(1, temperature / 3))
-  return hsvToRgb(0.6222222 - f * 0.05, 0.5 + f * 0.1, 1)
+  const f = Math.max(-1, Math.min(1, fr(fr(temperature) / 3)))
+  return hsvToRgb(fr(0.62222224 - fr(f * 0.05)), fr(0.5 + fr(f * 0.1)), 1)
 }
 
 function concat(chunks) {

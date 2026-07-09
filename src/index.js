@@ -1,7 +1,8 @@
-import { extractColormap, LiveNotImplemented } from "./live.js"
+import { extractColormap, UnsupportedVersion, EXTRACTOR_V } from "./live.js"
 
 const MANIFEST = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"
 const ORIGINS = /^https:\/\/ewanhowell\.com$|^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/
+const FLOOR = "1.16.2" // oldest supported version (biome-data era floor)
 
 export default {
   async fetch(request, env, ctx) {
@@ -32,12 +33,15 @@ export default {
 
 async function handleVersions(ctx, json) {
   const manifest = await (await fetch(MANIFEST, { cf: { cacheTtl: 3600, cacheEverything: true } })).json()
-  const body = {
-    latest: manifest.latest,
-    versions: manifest.versions
-      .filter((v) => v.type === "release")
-      .map((v) => ({ id: v.id, type: v.type, releaseTime: v.releaseTime })),
-  }
+  const releases = manifest.versions.filter((v) => v.type === "release")
+  const floor = releases.findIndex((v) => v.id === FLOOR)
+  const versions = releases
+    .slice(0, floor + 1)
+    .map((v) => ({ id: v.id, releaseTime: v.releaseTime }))
+  // the latest snapshot is supported too (older snapshots are not)
+  const snap = manifest.versions.find((v) => v.id === manifest.latest.snapshot)
+  if (snap && snap.type !== "release") versions.unshift({ id: snap.id, releaseTime: snap.releaseTime, snapshot: true })
+  const body = { latest: manifest.latest.release, versions }
   return json(body, 200, { "Cache-Control": "public, max-age=3600" })
 }
 
@@ -55,7 +59,7 @@ async function handleColormap(env, ctx, version, cors, json) {
         const doc = await extractColormap(env, version)
         const value = JSON.stringify(doc)
         // only validated results are ever cached (the cache is permanent)
-        ctx.waitUntil(env.COLORMAPS.put(version, value, { metadata: { extractorV: doc.extractorV ?? 1 } }))
+        ctx.waitUntil(env.COLORMAPS.put(version, value, { metadata: { extractorV: EXTRACTOR_V } }))
         return value
       })().finally(() => inflight.delete(version))
       inflight.set(version, pending)
@@ -63,7 +67,7 @@ async function handleColormap(env, ctx, version, cors, json) {
     const value = await pending
     return new Response(value, { headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "public, max-age=86400" } })
   } catch (e) {
-    if (e instanceof LiveNotImplemented) return json({ error: "version not available", version, note: "not backfilled; live extraction not yet implemented" }, 501)
+    if (e instanceof UnsupportedVersion) return json({ error: e.message, version }, 400)
     return json({ error: "extraction failed", version, detail: e.message }, 502)
   }
 }
