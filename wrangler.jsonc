@@ -8,7 +8,7 @@
 
   // per-version colormap JSON; create: wrangler kv namespace create COLORMAPS
   "kv_namespaces": [
-    { "binding": "COLORMAPS", "id": "REPLACE_WITH_KV_NAMESPACE_ID" }
+    { "binding": "COLORMAPS", "id": "8c11efe0a4d04858b3bff6c0a1b0e3af" }
   ],
 
   // colormap PNGs keyed by sha256; create: wrangler r2 bucket create colormap-textures
