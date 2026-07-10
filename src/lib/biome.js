@@ -1,5 +1,5 @@
 import { parseClass, findCode, walkCode } from "./classparse.js"
-import { toHex, hex, sample, applyGrassModifier, defaultSky } from "./colormap.js"
+import { toHex, hex, sample, applyGrassModifier } from "./colormap.js"
 
 const DEFAULT_WATER = "#3f76e4"
 
@@ -51,8 +51,10 @@ export function buildBiomeRecord(name, id, j, maps) {
   const dryOverride = toHex(fx.dry_foliage_color)
   const grassMod = fx.grass_color_modifier ?? "none"
   const tempMod = j.temperature_modifier ?? "none"
+  // pre-attributes data always has explicit sky_color; in the attributes era
+  // (1.21.11+) an absent sky attribute means the registered default: black
   const skyRaw = attrs["minecraft:visual/sky_color"] ?? fx.sky_color
-  const skyColor = skyRaw != null ? toHex(skyRaw) : hex(defaultSky(j.temperature))
+  const skyColor = skyRaw != null ? toHex(skyRaw) : "#000000"
 
   const grassColor = grassOverride ?? hex(applyGrassModifier(sample(maps.grass, j.temperature, j.downfall), grassMod))
   const foliageColor = foliageOverride ?? hex(sample(maps.foliage, j.temperature, j.downfall))
@@ -70,7 +72,7 @@ export function buildBiomeRecord(name, id, j, maps) {
   if (grassOverride) b.grassColorOverride = grassOverride
   if (foliageOverride) b.foliageColorOverride = foliageOverride
   if (dryOverride) b.dryFoliageColorOverride = dryOverride
-  // "fixed" = does not sample the colormap triangle (override, or the swamp
+  // 'fixed' = does not sample the colormap triangle (override, or the swamp
   // grass modifier which returns a constant; dark_forest still samples).
   if (grassOverride || grassMod === "swamp") b.grassColorFixed = true
   if (foliageOverride) b.foliageColorFixed = true
