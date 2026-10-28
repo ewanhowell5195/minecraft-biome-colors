@@ -155,6 +155,9 @@ function handleCall(ctx, ref, d, receiver, args) {
   // vanilla's temperature->sky formula, reproduced locally
   if (ref.name === "calculateSkyColor" && isNum(args[0])) return defaultSky(args[0])
 
+  // 26.3+ colour attributes wrap the rgb int as a Vector3f
+  if (ref.name === "vector3fFromRGB24" && isNum(args[0])) return args[0]
+
   // static no-arg builder() factory (EnvironmentAttributeMap.builder() etc.)
   if (ref.name === "builder" && d.args.length === 0 && receiver === undefined) {
     return { cls: ref.cls, props: {} }

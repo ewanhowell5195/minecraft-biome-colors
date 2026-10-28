@@ -13,7 +13,7 @@ const MANIFEST = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.jso
 const FLOOR = "1.16.2" // oldest supported version (biome-data era floor)
 const TEX = "assets/minecraft/textures/colormap"
 
-export const EXTRACTOR_V = 1
+export const EXTRACTOR_V = 2
 
 export class UnsupportedVersion extends Error {}
 

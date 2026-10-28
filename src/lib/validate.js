@@ -10,6 +10,7 @@ export function validateDoc(doc) {
   if (plains.temperature !== 0.8 || plains.downfall !== 0.4) throw new Error(`plains temp/downfall off: ${plains.temperature}/${plains.downfall}`)
   if (!by["desert"] || by["desert"].downfall !== 0) throw new Error("desert downfall not 0")
   if (!by["swamp"] || by["swamp"].grassColorModifier !== "swamp") throw new Error("swamp missing grass modifier")
+  if (plains.skyColor === "#000000") throw new Error("plains sky colour missing")
 
   for (const b of biomes) {
     for (const k of ["grassColor", "foliageColor", "waterColor", "skyColor"]) {
