@@ -48,7 +48,8 @@ export async function decodePng(buf) {
 
 // Vanilla colormap lookup at sea level (no altitude adjustment).
 export function sample(png, temperature, downfall) {
-  const t = clamp01(temperature), d = clamp01(downfall) * t
+  // the game stores temperature/downfall as floats, so 0.6 is really 0.6000000238
+  const t = clamp01(Math.fround(temperature)), d = clamp01(Math.fround(downfall)) * t
   const x = Math.floor((1 - t) * 255), y = Math.floor((1 - d) * 255)
   if (x < 0 || x > 255 || y < 0 || y > 255) return OUT_OF_RANGE
   const i = (y * png.w + x) * 3
